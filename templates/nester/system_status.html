@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}System Status - {{ probe.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>System Status
+            <small class="text-muted">{{ probe.name }}</small>
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- CPU Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">CPU Usage</h5>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar {% if system_stats.cpu_percent > 80 %}bg-danger{% elif system_stats.cpu_percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ system_stats.cpu_percent }}%">
+                        {{ system_stats.cpu_percent }}%
+                    </div>
+                </div>
+                <small class="text-muted">
+                    Cores: {{ system_stats.cpu_count }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Memory Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Memory Usage</h5>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar {% if system_stats.memory_percent > 80 %}bg-danger{% elif system_stats.memory_percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ system_stats.memory_percent }}%">
+                        {{ system_stats.memory_percent }}%
+                    </div>
+                </div>
+                <small class="text-muted">
+                    Used: {{ system_stats.memory_used }} GB / {{ system_stats.memory_total }} GB
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disk Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Disk Usage</h5>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar {% if system_stats.disk_percent > 80 %}bg-danger{% elif system_stats.disk_percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ system_stats.disk_percent }}%">
+                        {{ system_stats.disk_percent }}%
+                    </div>
+                </div>
+                <small class="text-muted">
+                    Used: {{ system_stats.disk_used }} GB / {{ system_stats.disk_total }} GB
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Network Usage</h5>
+                <p class="mb-1">
+                    <strong>IN:</strong> {{ system_stats.network_in }} MB/s
+                </p>
+                <p class="mb-0">
+                    <strong>OUT:</strong> {{ system_stats.network_out }} MB/s
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Processes -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Processes</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>PID</th>
+                                <th>Name</th>
+                                <th>CPU %</th>
+                                <th>Memory %</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for process in system_stats.top_processes %}
+                            <tr>
+                                <td>{{ process.pid }}</td>
+                                <td>{{ process.name }}</td>
+                                <td>{{ process.cpu_percent }}%</td>
+                                <td>{{ process.memory_percent }}%</td>
+                                <td>
+                                    <span class="badge {% if process.status == 'running' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ process.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh every 30 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

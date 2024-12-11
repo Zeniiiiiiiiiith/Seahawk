@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Network Scan Report - {{ probe.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Network Scan Report</h1>
+        <h4 class="text-muted">{{ probe.name }} - {{ scan_time|default:"No scan data" }}</h4>
+    </div>
+</div>
+
+{% if scan_data %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Scan Overview</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Network:</strong> {{ scan_data.network }}</li>
+                    <li><strong>Total Hosts:</strong> {{ scan_data.total_hosts }}</li>
+                    <li><strong>Active Hosts:</strong> {{ scan_data.hosts|length }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Network Status</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Average Latency:</strong> {{ scan_data.latency|default:"N/A" }} ms</li>
+                    <li><strong>Network Load:</strong> {{ scan_data.network_load|default:"N/A" }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Discovered Hosts</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Hostname</th>
+                                <th>Status</th>
+                                <th>Open Ports</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for host in scan_data.hosts %}
+                            <tr>
+                                <td>{{ host.ip }}</td>
+                                <td>{{ host.hostname|default:"Unknown" }}</td>
+                                <td>
+                                    <span class="badge {% if host.status == 'up' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ host.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if host.ports %}
+                                        {% for port in host.ports %}
+                                            <span class="badge bg-info">{{ port }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        No open ports
+                                    {% endif %}
+                                </td>
+                                <td>{{ host.last_seen|default:"N/A" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    No scan data available for this probe.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh the page every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

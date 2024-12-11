@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Alerts & Notifications{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>System Alerts</h1>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#alertSettingsModal">
+            Alert Settings
+        </button>
+    </div>
+</div>
+
+<!-- Alert Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title">Critical Alerts</h5>
+                <h2 class="mb-0">{{ alert_counts.critical }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Warnings</h5>
+                <h2 class="mb-0">{{ alert_counts.warning }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Information</h5>
+                <h2 class="mb-0">{{ alert_counts.info }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Resolved</h5>
+                <h2 class="mb-0">{{ alert_counts.resolved }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert List -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Probe</th>
+                                <th>Severity</th>
+                                <th>Message</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                            <tr>
+                                <td>{{ alert.timestamp }}</td>
+                                <td>{{ alert.probe.name }}</td>
+                                <td>
+                                    <span class="badge {% if alert.severity == 'critical' %}bg-danger{% elif alert.severity == 'warning' %}bg-warning{% else %}bg-info{% endif %}">
+                                        {{ alert.severity }}
+                                    </span>
+                                </td>
+                                <td>{{ alert.message }}</td>
+                                <td>
+                                    <span class="badge {% if alert.status == 'resolved' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ alert.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if alert.status != 'resolved' %}
+                                        <button class="btn btn-sm btn-success resolve-alert" data-alert-id="{{ alert.id }}">
+                                            Resolve
+                                        </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#alertDetailModal{{ alert.id }}">
+                                        Details
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Alert Detail Modal -->
+                            <div class="modal fade" id="alertDetailModal{{ alert.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Alert Details</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <dl class="row">
+                                                <dt class="col-sm-4">Probe</dt>
+                                                <dd class="col-sm-8">{{ alert.probe.name }}</dd>
+
+                                                <dt class="col-sm-4">Time</dt>
+                                                <dd class="col-sm-8">{{ alert.timestamp }}</dd>
+
+                                                <dt class="col-sm-4">Severity</dt>
+                                                <dd class="col-sm-8">{{ alert.severity }}</dd>
+
+                                                <dt class="col-sm-4">Status</dt>
+                                                <dd class="col-sm-8">{{ alert.status }}</dd>
+
+                                                <dt class="col-sm-4">Message</dt>
+                                                <dd class="col-sm-8">{{ alert.message }}</dd>
+
+                                                <dt class="col-sm-4">Details</dt>
+                                                <dd class="col-sm-8">{{ alert.details|linebreaks }}</dd>
+                                            </dl>
+                                        </div>
+                                        <div class="modal-footer">
+                                            {% if alert.status != 'resolved' %}
+                                                <button type="button" class="btn btn-success resolve-alert" data-alert-id="{{ alert.id }}">
+                                                    Resolve Alert
+                                                </button>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No alerts to display.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Settings Modal -->
+<div class="modal fade" id="alertSettingsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alert Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="alertSettingsForm">
+                    <div class="mb-3">
+                        <label class="form-label">CPU Usage Threshold (%)</label>
+                        <input type="number" class="form-control" name="cpu_threshold" value="{{ alert_settings.cpu_threshold }}" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Memory Usage Threshold (%)</label>
+                        <input type="number" class="form-control" name="memory_threshold" value="{{ alert_settings.memory_threshold }}" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Disk Usage Threshold (%)</label>
+                        <input type="number" class="form-control" name="disk_threshold" value="{{ alert_settings.disk_threshold }}" min="0" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Network Latency Threshold (ms)</label>
+                        <input type="number" class="form-control" name="latency_threshold" value="{{ alert_settings.latency_threshold }}" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alert Retention Period (days)</label>
+                        <input type="number" class="form-control" name="retention_days" value="{{ alert_settings.retention_days }}" min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Notifications</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_critical" {% if alert_settings.email_critical %}checked{% endif %}>
+                            <label class="form-check-label">Critical Alerts</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_warnings" {% if alert_settings.email_warnings %}checked{% endif %}>
+                            <label class="form-check-label">Warnings</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAlertSettings">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Handle alert resolution
+document.querySelectorAll('.resolve-alert').forEach(button => {
+    button.addEventListener('click', function() {
+        const alertId = this.getAttribute('data-alert-id');
+        fetch(`/api/alerts/${alertId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    });
+});
+
+// Handle alert settings form
+document.getElementById('saveAlertSettings').addEventListener('click', function() {
+    const form = document.getElementById('alertSettingsForm');
+    const formData = new FormData(form);
+    
+    fetch('/api/alert-settings/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+});
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Auto-refresh the page every minute
+setTimeout(function() {
+    location.reload();
+}, 60000);
+</script>
+{% endblock %}

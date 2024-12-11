@@ -1,0 +1,18 @@
+# Django and Core Requirements
+Django==4.2.7
+python-nmap==0.6.1
+requests==2.31.0
+
+# GUI Requirements
+PyQt5==5.15.7
+
+# Development and Testing
+pytest==7.4.3
+black==23.11.0
+flake8==6.1.0
+
+# API Development
+djangorestframework==3.14.0
+
+# Network and System Utilities
+psutil==5.9.6
