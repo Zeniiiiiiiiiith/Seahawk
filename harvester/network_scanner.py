@@ -1,117 +1,154 @@
 import nmap
 import socket
+import psutil
+import platform
+from datetime import datetime
 import subprocess
-import json
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 class NetworkScanner:
     def __init__(self):
         self.nm = nmap.PortScanner()
 
-    def get_local_ip(self) -> str:
-        """Get the local IP address of the current machine."""
-        try:
-            # Create a temporary socket to get local IP
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            s.close()
-            return local_ip
-        except Exception as e:
-            return f"Error getting IP: {str(e)}"
+    def get_system_info(self) -> Dict:
+        """Get local system information"""
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
 
-    def scan_network(self, network: str = None) -> Dict:
+        return {
+            'hostname': hostname,
+            'local_ip': local_ip,
+            'platform': platform.system(),
+            'platform_version': platform.version(),
+            'architecture': platform.machine()
+        }
+
+    def scan_network(self, target_network: str) -> Dict:
         """
-        Scan the network and return details about connected devices.
+        Perform a network scan using nmap
 
-        :param network: Network to scan (e.g., '192.168.1.0/24').
-                        If None, uses the local network of the current machine.
-        :return: Dictionary with scan results
+        Args:
+            target_network: Network to scan (e.g., '192.168.1.0/24')
         """
-        if not network:
-            # Automatically determine network based on local IP
-            local_ip = self.get_local_ip()
-            network = f"{'.'.join(local_ip.split('.')[:-1])}.0/24"
-
         try:
-            # Perform network scan
-            self.nm.scan(hosts=network, arguments='-sn')
+            # Perform the scan
+            self.nm.scan(hosts=target_network, arguments='-sn')
 
-            # Process scan results
-            scan_results = {
-                'network': network,
-                'total_hosts': 0,
-                'hosts': []
-            }
+            # Process results
+            hosts = []
+            total_hosts = 0
 
             for host in self.nm.all_hosts():
+                try:
+                    hostname = socket.gethostbyaddr(host)[0]
+                except socket.herror:
+                    hostname = ''
+
                 host_info = {
                     'ip': host,
-                    'hostname': self.nm[host].hostname(),
-                    'status': self.nm[host]['status']['state']
+                    'hostname': hostname,
+                    'status': self.nm[host].state(),
+                    'timestamp': datetime.now().isoformat()
                 }
-                scan_results['hosts'].append(host_info)
-                scan_results['total_hosts'] += 1
 
-            return scan_results
+                # Add additional port scan for up hosts
+                if host_info['status'] == 'up':
+                    total_hosts += 1
+                    self.nm.scan(host, arguments='-F')  # Fast scan of common ports
+                    if host in self.nm.all_hosts():
+                        host_info['ports'] = []
+                        for proto in self.nm[host].all_protocols():
+                            ports = self.nm[host][proto].keys()
+                            for port in ports:
+                                service = self.nm[host][proto][port]
+                                host_info['ports'].append({
+                                    'port': port,
+                                    'protocol': proto,
+                                    'state': service['state'],
+                                    'service': service['name']
+                                })
+
+                hosts.append(host_info)
+
+            return {
+                'scan_time': datetime.now().isoformat(),
+                'network': target_network,
+                'total_hosts': total_hosts,
+                'hosts': hosts
+            }
 
         except Exception as e:
             return {
                 'error': str(e),
-                'network': network
+                'scan_time': datetime.now().isoformat(),
+                'network': target_network
             }
 
-    def measure_ping_latency(self, target: str = "8.8.8.8", count: int = 5) -> float:
-        """
-        Measure network latency by pinging a target.
-
-        :param target: IP or hostname to ping
-        :param count: Number of ping attempts
-        :return: Average ping latency in milliseconds
-        """
+    def measure_latency(self, target: str = '8.8.8.8', count: int = 4) -> Optional[float]:
+        """Measure network latency to a target"""
         try:
-            # Use subprocess to run ping command
-            output = subprocess.check_output(
-                ['ping', '-c', str(count), target],
-                universal_newlines=True
-            )
+            if platform.system().lower() == 'windows':
+                cmd = ['ping', '-n', str(count), target]
+            else:
+                cmd = ['ping', '-c', str(count), target]
 
-            # Extract average latency
-            for line in output.split('\n'):
-                if 'avg' in line:
-                    return float(line.split('/')[-3])
+            result = subprocess.run(cmd, capture_output=True, text=True)
 
-            return -1.0
-        except Exception as e:
-            return -1.0
+            if result.returncode == 0:
+                # Parse average time from output
+                if platform.system().lower() == 'windows':
+                    # Windows output parsing
+                    for line in result.stdout.split('\n'):
+                        if 'Average' in line:
+                            return float(line.split('=')[-1].strip('ms '))
+                else:
+                    # Linux/Unix output parsing
+                    for line in result.stdout.split('\n'):
+                        if 'avg' in line:
+                            return float(line.split('/')[-3])
 
-    def save_scan_report(self, scan_results: Dict, filename: str = 'network_scan_report.json'):
-        """
-        Save network scan results to a JSON file.
+            return None
+        except Exception:
+            return None
 
-        :param scan_results: Dictionary of scan results
-        :param filename: Output filename
-        """
-        with open(filename, 'w') as f:
-            json.dump(scan_results, f, indent=4)
+    def get_network_interfaces(self) -> List[Dict]:
+        """Get information about network interfaces"""
+        interfaces = []
+
+        for interface, addrs in psutil.net_if_addrs().items():
+            interface_info = {
+                'name': interface,
+                'addresses': []
+            }
+
+            for addr in addrs:
+                addr_info = {
+                    'address': addr.address,
+                    'netmask': getattr(addr, 'netmask', None),
+                    'family': str(addr.family)
+                }
+                interface_info['addresses'].append(addr_info)
+
+            interfaces.append(interface_info)
+
+        return interfaces
 
 
-# Example usage
 if __name__ == '__main__':
+    # Test the scanner
     scanner = NetworkScanner()
 
-    # Get local IP
-    local_ip = scanner.get_local_ip()
-    print(f"Local IP: {local_ip}")
+    # Get system info
+    print("System Information:")
+    print(scanner.get_system_info())
 
-    # Scan network
-    scan_results = scanner.scan_network()
-    print(json.dumps(scan_results, indent=2))
+    # Scan local network
+    print("\nNetwork Scan:")
+    scan_result = scanner.scan_network('192.168.1.0/24')
+    print(scan_result)
 
-    # Measure ping latency
-    latency = scanner.measure_ping_latency()
-    print(f"Average Ping Latency: {latency} ms")
-
-    # Save scan report
-    scanner.save_scan_report(scan_results)
+    # Measure latency
+    print("\nNetwork Latency:")
+    latency = scanner.measure_latency()
+    print(f"Average latency: {latency}ms")
