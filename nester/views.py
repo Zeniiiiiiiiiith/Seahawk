@@ -3,7 +3,8 @@ from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import Probe, ProbeData, MaintenanceLog
-
+from django.shortcuts import render
+from .models import Alert, AlertSettings
 
 class ProbeListView(ListView):
     """Display list of all probes"""
@@ -87,26 +88,21 @@ def system_status(request, pk):
 
 def alerts_view(request):
     """Display system alerts"""
-    # Get alerts from the last 30 days
-    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    # Get all alerts, ordered by timestamp (most recent first)
+    alerts = Alert.objects.all().order_by('-timestamp')
+
+    # Count alerts by severity
+    alert_counts = {
+        'critical': Alert.objects.filter(severity='critical', status='active').count(),
+        'warning': Alert.objects.filter(severity='warning', status='active').count(),
+        'info': Alert.objects.filter(severity='info', status='active').count(),
+        'resolved': Alert.objects.filter(status='resolved').count(),
+    }
 
     context = {
-        'alert_counts': {
-            'critical': 0,  # You'll need to implement the actual counting
-            'warning': 0,
-            'info': 0,
-            'resolved': 0,
-        },
-        'alerts': [],  # You'll need to implement the actual alert fetching
-        'alert_settings': {
-            'cpu_threshold': 80,
-            'memory_threshold': 80,
-            'disk_threshold': 90,
-            'latency_threshold': 1000,
-            'retention_days': 30,
-            'email_critical': True,
-            'email_warnings': False,
-        }
+        'alerts': alerts,
+        'alert_counts': alert_counts,
+        'alert_settings': AlertSettings.objects.first(),  # Get global alert settings
     }
 
     return render(request, 'nester/alerts.html', context)

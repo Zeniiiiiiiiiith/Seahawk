@@ -1,13 +1,43 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seahawks Monitoring - {% block title %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        .alert-dropdown {
+            min-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0;
+        }
+        .alert-preview {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .alert-preview:last-child {
+            border-bottom: none;
+        }
+        .alert-preview.critical {
+            border-left: 4px solid #dc3545;
+        }
+        .alert-preview.warning {
+            border-left: 4px solid #ffc107;
+        }
+        .alert-preview.info {
+            border-left: 4px solid #0dcaf0;
+        }
+        .alert-time {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+    </style>
 </head>
-<body>
+<body class="d-flex flex-column h-100">
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'nester:probe-list' %}">Seahawks Monitoring</a>
@@ -15,7 +45,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'nester:probe-list' %}">Probes</a>
                     </li>
@@ -23,22 +53,85 @@
                         <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
                     </li>
                 </ul>
+                 <!-- Alerts in header with split button -->
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <div class="btn-group">
+                            <a class="nav-link" href="{% url 'nester:alerts' %}">
+                                <i class="bi bi-bell-fill"></i> Alerts
+                                {% if active_alerts > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {{ active_alerts }}
+                                    </span>
+                                {% endif %}
+                            </a>
+                            <button type="button" class="btn btn-link nav-link dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end alert-dropdown">
+                                <h6 class="dropdown-header">Recent Alerts</h6>
+                                {% if recent_alerts %}
+                                    {% for alert in recent_alerts %}
+                                        <div class="alert-preview {{ alert.severity }}">
+                                            <strong>{{ alert.probe.name }}</strong>
+                                            <div class="alert-time">{{ alert.timestamp|timesince }} ago</div>
+                                            <div>{{ alert.message }}</div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="alert-preview">
+                                        <em>No recent alerts</em>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+    <!-- Main Content -->
+    <main class="flex-shrink-0">
+        <div class="container mt-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-        {% block content %}
-        {% endblock %}
-    </div>
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'nester:probe-list' %}" class="text-decoration-none">Probes</a></li>
+                        <li><a href="{% url 'nester:alerts' %}" class="text-decoration-none">Alerts</a></li>
+                        <li><a href="{% url 'admin:index' %}" class="text-decoration-none">Admin</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>System Status</h5>
+                    <p class="mb-0">Active Probes: {{ active_probes|default:"0" }}</p>
+                    <p class="mb-0">Active Alerts: {{ active_alerts|default:"0" }}</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Support</h5>
+                    <p class="mb-0">Email: support@nfl-it.com</p>
+                    <p class="mb-0">Phone: (555) 123-4567</p>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}

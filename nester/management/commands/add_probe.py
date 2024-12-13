@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from nester.models import Probe
 
+
 class Command(BaseCommand):
     help = 'Add a new probe to the monitoring system'
 

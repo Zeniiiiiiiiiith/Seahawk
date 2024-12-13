@@ -9,7 +9,26 @@ SECRET_KEY = 'your-secret-key-here-replace-in-production'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'nester.server.com',  # placeholder for nester
+    '*',  # Only for development and I'll remove it afterward
+]
+
+# Harvester configuration
+HARVESTER_CONFIG = {
+    'NESTER_URL': 'http://nester.server.com',  # placeholder for nester URL
+    'API_KEY': 'your-secret-key-here',  # For authentication
+    'UPDATE_INTERVAL': 300,  # 5 minutes
+}
+
+# CORS settings to allow Harvester communication
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    # Add Harvester IP/Address here
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -40,16 +59,15 @@ ROOT_URLCONF = 'Seahawk.urls'  # Changed from seahawks_project to Seahawk
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates'  # This tells Django to look in the templates directory
-        ],
-        'APP_DIRS': True,  # This tells Django to also look in each app's templates directory
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'nester.context_processors.footer_context',  # Add this line
             ],
         },
     },
