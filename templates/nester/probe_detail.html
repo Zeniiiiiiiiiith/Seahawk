@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Probes{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Network Probes</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Status Overview</h5>
+                <p class="card-text">
+                    Active Probes: <span class="badge bg-success">{{ active_probes }}</span><br>
+                    Total Probes: <span class="badge bg-primary">{{ total_probes }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Hostname</th>
+                                <th>IP Address</th>
+                                <th>Status</th>
+                                <th>Last Contact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for probe in probes %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'nester:probe-detail' probe.pk %}">{{ probe.name }}</a>
+                                </td>
+                                <td>{{ probe.hostname }}</td>
+                                <td>{{ probe.ip_address }}</td>
+                                <td>
+                                    <span class="badge {% if probe.status == 'online' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ probe.status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ probe.last_contact|default:"Never" }}</td>
+                                <td>
+                                    <a href="{% url 'nester:probe-detail' probe.pk %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-info-circle"></i> Details
+                                    </a>
+                                    <a href="{% url 'nester:probe-dashboard' probe.pk %}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-speedometer2"></i> Dashboard
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No probes configured yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

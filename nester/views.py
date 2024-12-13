@@ -6,6 +6,7 @@ from .models import Probe, ProbeData, MaintenanceLog
 from django.shortcuts import render
 from .models import Alert, AlertSettings
 
+
 class ProbeListView(ListView):
     """Display list of all probes"""
     model = Probe

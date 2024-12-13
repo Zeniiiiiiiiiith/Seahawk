@@ -30,8 +30,3 @@ class AlertAdmin(admin.ModelAdmin):
 @admin.register(AlertSettings)
 class AlertSettingsAdmin(admin.ModelAdmin):
     list_display = ('cpu_threshold', 'memory_threshold', 'disk_threshold')
-
-
-from django.contrib import admin
-
-# Register your models here.

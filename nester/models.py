@@ -54,6 +54,7 @@ class AlertSettings(models.Model):
     def __str__(self):
         return "Alert Settings"
 
+
 class Probe(models.Model):
     """Represents a Harvester probe in the field"""
     name = models.CharField(max_length=255)

@@ -27,7 +27,7 @@ HARVESTER_CONFIG = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    # Add Harvester IP/Address here
+    # We will need to add Harvester IP/Address here
 ]
 
 # Application definition
@@ -67,13 +67,13 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'nester.context_processors.footer_context',  # Add this line
+                'nester.context_processors.footer_context',
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'Seahawk.wsgi.application'  # Changed from seahawks_project to Seahawk
+WSGI_APPLICATION = 'Seahawk.wsgi.application'
 
 # Database
 DATABASES = {
@@ -105,5 +105,5 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Seahawks Monitoring Specific Settings
-SEAHAWKS_AUTO_UPDATE_REPO = 'https://gitlab.com/nfl-it/seahawks-monitoring.git'
+SEAHAWKS_AUTO_UPDATE_REPO = 'https://gitlab.com/nfl-it/seahawks-monitoring.git' # Placeholder for gitlab
 SEAHAWKS_SCAN_INTERVAL = 3600  # 1 hour between network scans
