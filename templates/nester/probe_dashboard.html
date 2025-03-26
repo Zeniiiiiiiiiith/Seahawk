@@ -34,66 +34,60 @@
     </div>
     
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Latest Network Scan</h5>
+        <!-- Latest Network Scan section -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Latest Network Scan</h5>
+    </div>
+    <div class="card-body">
+        {% if latest_scan %}
+            <p class="mb-1"><strong>Scan Time:</strong> {{ latest_scan.timestamp|date:"F j, Y, g:i a" }}</p>
+            <p class="mb-1"><strong>Total Hosts:</strong> {{ latest_scan.data.total_hosts|default:"N/A" }}</p>
+            <p class="mb-1"><strong>Network:</strong> {{ latest_scan.data.network|default:"N/A" }}</p>
+            <div class="mt-3">
+                <a href="{% url 'nester:scan-report' probe.pk %}" class="btn btn-primary">View Full Report</a>
             </div>
-            <div class="card-body">
-                {% if latest_data %}
-                    <p class="card-text">
-                        <strong>Scan Time:</strong> {{ latest_data.timestamp }}<br>
-                        <strong>Total Hosts:</strong> {{ latest_data.data.total_hosts }}<br>
-                        <strong>Network:</strong> {{ latest_data.data.network }}
-                    </p>
-                    <a href="{% url 'nester:scan-report' probe.pk %}" class="btn btn-primary">View Full Report</a>
-                {% else %}
-                    <p class="card-text">No scan data available.</p>
-                {% endif %}
-            </div>
-        </div>
+        {% else %}
+            <p class="mb-0">No scan data available</p>
+        {% endif %}
     </div>
 </div>
 
-<div class="row">
-    <div class="col">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Recent Activity</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Action</th>
-                                <th>Status</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in maintenance_logs %}
-                            <tr>
-                                <td>{{ log.timestamp }}</td>
-                                <td>{{ log.action }}</td>
-                                <td>
-                                    {% if log.status == 'success' %}
-                                        <span class="badge bg-success">Success</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Failed</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ log.details }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">No recent activity.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<!-- Recent Activity section -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Recent Activity</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Action</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.timestamp|date:"g:i a" }}</td>
+                        <td>{{ log.action }}</td>
+                        <td>
+                            <span class="badge {% if log.status == 'success' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ log.status|title }}
+                            </span>
+                        </td>
+                        <td>{{ log.details }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No recent activity.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

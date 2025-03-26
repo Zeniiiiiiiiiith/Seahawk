@@ -39,11 +39,22 @@ class ProbeDetailView(DetailView):
 def probe_dashboard(request, pk):
     """Display real-time dashboard for a specific probe"""
     probe = get_object_or_404(Probe, pk=pk)
-    latest_data = ProbeData.objects.filter(probe=probe).order_by('-timestamp')[:10]
+
+    # Get latest scan data
+    latest_scan = ProbeData.objects.filter(
+        probe=probe,
+        data_type='network_scan'
+    ).first()
+
+    # Get recent activity logs
+    recent_logs = MaintenanceLog.objects.filter(
+        probe=probe
+    ).order_by('-timestamp')[:5]
 
     return render(request, 'nester/probe_dashboard.html', {
         'probe': probe,
-        'latest_data': latest_data,
+        'latest_scan': latest_scan,
+        'recent_logs': recent_logs,
     })
 
 

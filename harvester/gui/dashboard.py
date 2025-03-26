@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QPushButton, QTableWidget,
                              QTableWidgetItem, QProgressBar)
 from PyQt5.QtCore import Qt, QTimer
-from network_scanner import NetworkScanner
+from ..network_scanner import NetworkScanner
 import json
 
 
@@ -79,36 +79,63 @@ class HarvesterDashboard(QMainWindow):
         self.statusBar().showMessage('Ready')
 
     def perform_scan(self):
-        """Perform network scan"""
-        self.scan_button.setEnabled(False)
-        self.scan_progress.setVisible(True)
-        self.scan_progress.setRange(0, 0)  # Indeterminate progress
-        self.statusBar().showMessage('Scanning network...')
+        """Perform network scan with more reliable approach"""
+        try:
+            self.scan_button.setEnabled(False)
+            self.scan_progress.setVisible(True)
+            self.scan_progress.setRange(0, 0)  # Indeterminate progress
+            self.statusBar().showMessage('Scanning network...')
 
-        # Get local network from system info
-        sys_info = self.scanner.get_system_info()
-        local_ip = sys_info['local_ip']
-        network = '.'.join(local_ip.split('.')[:-1]) + '.0/24'
+            # Get local network from system info
+            sys_info = self.scanner.get_system_info()
+            local_ip = sys_info['local_ip']
 
-        # Perform scan
-        results = self.scanner.scan_network(network)
+            # For testing, use a wider range (first 20 addresses in your subnet)
+            network_base = '.'.join(local_ip.split('.')[:-1])
+            network = f"{network_base}.0/24"  # Use CIDR notation for better nmap scanning
 
-        # Update results table
-        self.results_table.setRowCount(len(results['hosts']))
-        for i, host in enumerate(results['hosts']):
-            self.results_table.setItem(i, 0, QTableWidgetItem(host['ip']))
-            self.results_table.setItem(i, 1, QTableWidgetItem(host.get('hostname', '')))
-            self.results_table.setItem(i, 2, QTableWidgetItem(host['status']))
+            self.statusBar().showMessage(f'Scanning network {network}...')
 
-            ports = []
-            if 'ports' in host:
-                for port in host['ports']:
-                    ports.append(f"{port['port']}/{port['protocol']} ({port['service']})")
-            self.results_table.setItem(i, 3, QTableWidgetItem(', '.join(ports)))
+            # When scanning with nmap, use more aggressive options
+            try:
+                # Replace this with direct network scanning if scanner method doesn't work
+                self.scanner.nm.scan(hosts=network, arguments='-sP -T4')  # Fast ping scan
 
-        self.scan_button.setEnabled(True)
-        self.scan_progress.setVisible(False)
-        self.statusBar().showMessage(f'Scan complete. Found {results["total_hosts"]} active hosts.')
+                # Process results directly from nmap
+                hosts = []
+                total_hosts = 0
+
+                for host in self.scanner.nm.all_hosts():
+                    if self.scanner.nm[host].state() == 'up':
+                        total_hosts += 1
+                        host_info = {
+                            'ip': host,
+                            'hostname': self.scanner.nm[host].hostname(),
+                            'status': 'up'
+                        }
+                        hosts.append(host_info)
+
+                # Clear and update the table
+                self.results_table.setRowCount(len(hosts))
+
+                for i, host in enumerate(hosts):
+                    self.results_table.setItem(i, 0, QTableWidgetItem(host['ip']))
+                    self.results_table.setItem(i, 1, QTableWidgetItem(host['hostname']))
+                    self.results_table.setItem(i, 2, QTableWidgetItem(host['status']))
+
+                    # For now, just add a placeholder for ports
+                    self.results_table.setItem(i, 3, QTableWidgetItem("N/A"))
+
+                self.statusBar().showMessage(f'Scan complete. Found {total_hosts} active hosts.')
+
+            except Exception as e:
+                self.statusBar().showMessage(f'Error during scan: {str(e)}')
+
+        except Exception as e:
+            self.statusBar().showMessage(f'Error preparing scan: {str(e)}')
+        finally:
+            self.scan_button.setEnabled(True)
+            self.scan_progress.setVisible(False)
 
     def update_dashboard(self):
         """Update dashboard information"""
@@ -125,3 +152,7 @@ def main():
     dashboard = HarvesterDashboard()
     dashboard.show()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
