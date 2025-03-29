@@ -5,30 +5,22 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
-SECRET_KEY = 'your-secret-key-here-replace-in-production'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'your-secret-key-here-replace-in-production')
 
-DEBUG = True
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'nester.server.com',  # placeholder for nester
-    '*',  # Only for development and I'll remove it afterward
-]
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,nester.server.com,*').split(',')
 
 # Harvester configuration
 HARVESTER_CONFIG = {
-    'NESTER_URL': 'http://nester.server.com',  # placeholder for nester URL
-    'API_KEY': 'your-secret-key-here',  # For authentication
-    'UPDATE_INTERVAL': 300,  # 5 minutes
+    'NESTER_URL': os.environ.get('NESTER_URL', 'http://nester.server.com'),
+    'API_KEY': os.environ.get('API_KEY', 'your-secret-key-here'),
+    'UPDATE_INTERVAL': int(os.environ.get('UPDATE_INTERVAL', '300')),
 }
 
 # CORS settings to allow Harvester communication
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    # We will need to add Harvester IP/Address here
-]
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -42,6 +34,9 @@ INSTALLED_APPS = [
     # Custom Apps
     'harvester',
     'nester',
+
+    # Add REST framework
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -54,7 +49,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'Seahawk.urls'  # Changed from seahawks_project to Seahawk
+ROOT_URLCONF = 'Seahawk.urls'
 
 TEMPLATES = [
     {
@@ -75,13 +70,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Seahawk.wsgi.application'
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Database configuration - Use PostgreSQL or fall back to SQLite
+if os.environ.get('USE_POSTGRES', 'False').lower() == 'true':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'seahawks_db'),
+            'USER': os.environ.get('DB_USER', 'seahawks_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'secure_password'),
+            'HOST': os.environ.get('DB_HOST', 'database_vm_ip'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -99,11 +106,62 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = os.environ.get('STATIC_ROOT', str(BASE_DIR / 'staticfiles'))
+
+# Media files
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', str(BASE_DIR / 'media'))
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Seahawks Monitoring Specific Settings
-SEAHAWKS_AUTO_UPDATE_REPO = 'https://gitlab.com/nfl-it/seahawks-monitoring.git' # Placeholder for gitlab
-SEAHAWKS_SCAN_INTERVAL = 3600  # 1 hour between network scans
+SEAHAWKS_AUTO_UPDATE_REPO = os.environ.get('SEAHAWKS_AUTO_UPDATE_REPO',
+                                           'https://gitlab.com/nfl-it/seahawks-monitoring.git')
+SEAHAWKS_SCAN_INTERVAL = int(os.environ.get('SEAHAWKS_SCAN_INTERVAL', '3600'))  # 1 hour between network scans
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.environ.get('LOG_FILE', str(BASE_DIR / 'seahawks.log')),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'harvester': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'nester': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
